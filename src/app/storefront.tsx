@@ -44,12 +44,14 @@ export default function Storefront() {
   useEffect(() => {
     const savedCart = localStorage.getItem('myl-cart');
     const savedFavorites = localStorage.getItem('myl-favorites');
+    let restoredCart: CartItem[] = [];
 
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart));
+        const parsedCart: unknown = JSON.parse(savedCart);
+        if (Array.isArray(parsedCart)) restoredCart = parsedCart as CartItem[];
       } catch {
-        setCart([]);
+        restoredCart = [];
       }
     }
 
@@ -65,20 +67,31 @@ export default function Storefront() {
       .then((response) => response.json())
       .then((data: Product[]) => {
         const availableProducts = data.filter((product) => product.stock > 0);
-        const availableIds = new Set(availableProducts.map((product) => product.id));
+        const productsById = new Map(availableProducts.map((product) => [product.id, product]));
         setProducts(availableProducts);
-        setCart((current) => current.filter((item) => availableIds.has(item.id)));
+        setCart(
+          restoredCart.flatMap((item) => {
+            const product = productsById.get(item.id);
+            if (!product) return [];
+
+            const quantity = Math.min(Number(item.quantity) || 0, product.stock);
+            return quantity > 0 ? [{ ...product, quantity }] : [];
+          }),
+        );
       })
-      .catch(() => setProducts([]))
+      .catch(() => {
+        setProducts([]);
+        setCart([]);
+      })
       .finally(() => setCatalogLoaded(true));
 
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !catalogLoaded) return;
     localStorage.setItem('myl-cart', JSON.stringify(cart));
-  }, [cart, mounted]);
+  }, [cart, catalogLoaded, mounted]);
 
   useEffect(() => {
     if (!mounted) return;
