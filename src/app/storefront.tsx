@@ -36,14 +36,12 @@ export default function Storefront() {
   const [sort, setSort] = useState<'precio' | 'stock' | 'nombre'>('precio');
   const [page, setPage] = useState(1);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
     const savedCart = localStorage.getItem('myl-cart');
-    const savedFavorites = localStorage.getItem('myl-favorites');
     let restoredCart: CartItem[] = [];
 
     if (savedCart) {
@@ -52,14 +50,6 @@ export default function Storefront() {
         if (Array.isArray(parsedCart)) restoredCart = parsedCart as CartItem[];
       } catch {
         restoredCart = [];
-      }
-    }
-
-    if (savedFavorites) {
-      try {
-        setFavorites(JSON.parse(savedFavorites));
-      } catch {
-        setFavorites([]);
       }
     }
 
@@ -92,11 +82,6 @@ export default function Storefront() {
     if (!mounted || !catalogLoaded) return;
     localStorage.setItem('myl-cart', JSON.stringify(cart));
   }, [cart, catalogLoaded, mounted]);
-
-  useEffect(() => {
-    if (!mounted) return;
-    localStorage.setItem('myl-favorites', JSON.stringify(favorites));
-  }, [favorites, mounted]);
 
   useEffect(() => {
     if (!cartOpen) return;
@@ -155,12 +140,6 @@ export default function Storefront() {
   useEffect(() => {
     setPage(1);
   }, [search, edition, type, sort]);
-
-  const toggleFavorite = (id: string) => {
-    setFavorites((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-    );
-  };
 
   const addToCart = (product: Product) => {
     setCart((current) => {
@@ -298,8 +277,6 @@ export default function Storefront() {
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {paginatedProducts.map((product) => {
-                    const isFavorite = favorites.includes(product.id);
-
                     return (
                       <article
                         key={product.id}
@@ -311,14 +288,6 @@ export default function Storefront() {
                             alt={product.nombre}
                             className="h-56 w-full object-contain bg-gradient-to-b from-zinc-100 to-white p-4"
                           />
-                          <button
-                            type="button"
-                            onClick={() => toggleFavorite(product.id)}
-                            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-lg shadow-sm"
-                            aria-label={isFavorite ? 'Quitar favorito' : 'Guardar favorito'}
-                          >
-                            {isFavorite ? '♥' : '♡'}
-                          </button>
                         </div>
 
                         <div className="space-y-3 p-4">
