@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Product = {
   id: string;
@@ -34,11 +34,11 @@ export default function Storefront() {
   const [edition, setEdition] = useState('TODAS');
   const [type, setType] = useState('TODOS');
   const [sort, setSort] = useState<'precio' | 'stock' | 'nombre'>('precio');
-  const [page, setPage] = useState(1);
+  const [visibleState, setVisibleState] = useState({ filterKey: '', count: PAGE_SIZE });
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [mounted, setMounted] = useState(false);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedCart = localStorage.getItem('myl-cart');
@@ -74,14 +74,12 @@ export default function Storefront() {
         setCart([]);
       })
       .finally(() => setCatalogLoaded(true));
-
-    setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!mounted || !catalogLoaded) return;
+    if (!catalogLoaded) return;
     localStorage.setItem('myl-cart', JSON.stringify(cart));
-  }, [cart, catalogLoaded, mounted]);
+  }, [cart, catalogLoaded]);
 
   useEffect(() => {
     if (!cartOpen) return;
@@ -134,12 +132,32 @@ export default function Storefront() {
       });
   }, [edition, products, search, sort, type]);
 
-  const pages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
-  const paginatedProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const filterKey = JSON.stringify([search, edition, type, sort]);
+  const visibleCount = visibleState.filterKey === filterKey ? visibleState.count : PAGE_SIZE;
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
 
   useEffect(() => {
-    setPage(1);
-  }, [search, edition, type, sort]);
+    const loadMoreElement = loadMoreRef.current;
+    if (!loadMoreElement || visibleCount >= filteredProducts.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleState((current) => ({
+            filterKey,
+            count: Math.min(
+              (current.filterKey === filterKey ? current.count : PAGE_SIZE) + PAGE_SIZE,
+              filteredProducts.length,
+            ),
+          }));
+        }
+      },
+      { rootMargin: '300px' },
+    );
+
+    observer.observe(loadMoreElement);
+    return () => observer.disconnect();
+  }, [filteredProducts.length, filterKey, visibleCount]);
 
   const addToCart = (product: Product) => {
     setCart((current) => {
@@ -188,12 +206,12 @@ export default function Storefront() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-amber-300">MYL</p>
-              <h1 className="mt-2 text-3xl font-black sm:text-5xl">Tienda de cartas</h1>
+              <h1 className="mt-2 text-3xl font-black sm:text-5xl">KOK TCG PE👑</h1>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               <div className="rounded-full bg-white/10 px-4 py-2 text-sm text-zinc-200">
-                {products.length} cartas cargadas
+                {products.length} productos distintos
               </div>
               <div className="rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-[#201814]">
                 {totalItems} en carrito
@@ -264,7 +282,7 @@ export default function Storefront() {
               <>
                 <div className="flex items-center justify-between text-sm text-zinc-600">
                   <span>
-                    {filteredProducts.length} resultados • página {page}/{pages}
+                    Mostrando {visibleProducts.length} de {filteredProducts.length} resultados
                   </span>
                   <button
                     type="button"
@@ -276,7 +294,7 @@ export default function Storefront() {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {paginatedProducts.map((product) => {
+                  {visibleProducts.map((product) => {
                     return (
                       <article
                         key={product.id}
@@ -331,26 +349,14 @@ export default function Storefront() {
                   })}
                 </div>
 
-                <div className="mt-6 flex items-center justify-between rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-200">
-                  <button
-                    type="button"
-                    disabled={page === 1}
-                    onClick={() => setPage((value) => Math.max(1, value - 1))}
-                    className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Anterior
-                  </button>
-                  <span className="text-sm text-zinc-600">
-                    Página {page} de {pages}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={page >= pages}
-                    onClick={() => setPage((value) => Math.min(pages, value + 1))}
-                    className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Siguiente
-                  </button>
+                <div
+                  ref={loadMoreRef}
+                  className="py-4 text-center text-sm text-zinc-500"
+                  aria-live="polite"
+                >
+                  {visibleProducts.length < filteredProducts.length
+                    ? 'Desplázate para ver más cartas'
+                    : 'Ya viste todas las cartas'}
                 </div>
               </>
             )}
