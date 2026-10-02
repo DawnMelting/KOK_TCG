@@ -10,6 +10,7 @@ type Product = {
   stock: number;
   precio: number;
   edicion: string;
+  caja: string;
   tipo: string;
   raza: string;
   coste: number | null;
@@ -27,6 +28,9 @@ const formatPrice = (value: number) =>
     currency: 'CLP',
     maximumFractionDigits: 0,
   }).format(value);
+
+const normalizeSearchText = (value: string) =>
+  value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
 
 export default function Storefront() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -109,16 +113,15 @@ export default function Storefront() {
   );
 
   const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = normalizeSearchText(search);
 
     return [...products]
       .filter((product) => {
         const matchesSearch =
           !query ||
-          product.nombre.toLowerCase().includes(query) ||
-          product.codigo.toLowerCase().includes(query) ||
-          product.edicion.toLowerCase().includes(query) ||
-          product.raza.toLowerCase().includes(query);
+          [product.nombre, product.codigo, product.edicion, product.caja, product.raza].some(
+            (value) => normalizeSearchText(value).includes(query),
+          );
 
         const matchesEdition = edition === 'TODAS' || product.edicion === edition;
         const matchesType = type === 'TODOS' || product.tipo === type;
@@ -229,7 +232,7 @@ export default function Storefront() {
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Buscar nombre, código, edición o raza"
+                    placeholder="Buscar nombre, código, edición, caja o raza"
                     className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-500"
                   />
                 </label>

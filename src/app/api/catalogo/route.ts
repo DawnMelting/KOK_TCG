@@ -107,6 +107,7 @@ export async function GET() {
         stock: existencia.stock,
         precio: existencia.precio,
         edicion: registro.carta.edicion.nombre,
+        caja: registro.producto.nombre,
         tipo: registro.carta.tipo.nombre,
         raza: registro.carta.cartas_razas[0]?.raza.nombre ?? "",
         coste: registro.carta.coste,
