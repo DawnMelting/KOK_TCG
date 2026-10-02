@@ -206,7 +206,7 @@ export default function Storefront() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-amber-300">MYL</p>
-              <h1 className="mt-2 text-3xl font-black sm:text-5xl">KOK TCG PE👑</h1>
+              <h1 className="mt-2 text-3xl font-black sm:text-5xl">KOK STORE PE👑</h1>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
