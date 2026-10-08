@@ -29,8 +29,8 @@ const formatPrice = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const normalizeSearchText = (value: string) =>
-  value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
+const normalizeSearchText = (value: string | null | undefined) =>
+  (value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
 
 export default function Storefront() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -113,15 +113,20 @@ export default function Storefront() {
   );
 
   const filteredProducts = useMemo(() => {
-    const query = normalizeSearchText(search);
+    const queryTerms = normalizeSearchText(search).split(/\s+/).filter(Boolean);
 
     return [...products]
       .filter((product) => {
-        const matchesSearch =
-          !query ||
-          [product.nombre, product.codigo, product.edicion, product.caja, product.raza].some(
-            (value) => normalizeSearchText(value).includes(query),
-          );
+        const searchableValues = [
+          product.nombre,
+          product.codigo,
+          product.edicion,
+          product.caja,
+          product.raza,
+        ].map(normalizeSearchText);
+        const matchesSearch = queryTerms.every((term) =>
+          searchableValues.some((value) => value.includes(term)),
+        );
 
         const matchesEdition = edition === 'TODAS' || product.edicion === edition;
         const matchesType = type === 'TODOS' || product.tipo === type;
@@ -232,7 +237,7 @@ export default function Storefront() {
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Buscar nombre, código, edición, caja o raza"
+                    placeholder="Buscar nombre, código o edición (Tombstone, Xinnian...)"
                     className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-500"
                   />
                 </label>
