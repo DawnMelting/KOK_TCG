@@ -202,7 +202,7 @@ export default function Storefront() {
 
   const handleShare = async () => {
     const message = encodeURIComponent(shareText);
-    const url = `https://wa.me/?text=${message}`;
+    const url = `https://wa.me/56998283672?text=${message}`;
     window.open(url, '_blank', 'noopener,noreferrer');
     setCartOpen(false);
   };
